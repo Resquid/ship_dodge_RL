@@ -14,7 +14,7 @@ class CustomEnv(gym.Env):
     def reset(self):
         del self.pygame
         self.pygame = PyGame2D()
-        obs = self.pygame.obseve()
+        obs = self.pygame.observe()
         return obs
 
     def step(self, action):
@@ -24,6 +24,7 @@ class CustomEnv(gym.Env):
         done = self.pygame.is_done()
         return obs, reward, done, {}
 
-    def render(self, mode = 'Human', close = False):
+    def render(self, mode='Human', close=False):
         self.pygame.view()
+
 
