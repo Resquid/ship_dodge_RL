@@ -4,6 +4,7 @@ from pygame.sprite import Group
 from pygame.sprite import Sprite
 import math
 import sys
+from collections import deque
 
 class PyGame2D:
     def __init__(self):
@@ -13,7 +14,7 @@ class PyGame2D:
         self.font = pygame.font.SysFont('Arial', 30)
         self.ship = Ship((800, 500))
         self.obstacles = Group()
-        self.game_speed = 60
+        self.game_speed = 300
         self.mode = 0
         self.score = 0
 
@@ -28,25 +29,27 @@ class PyGame2D:
     def evaluate(self):
         reward = 0
         for obstacle_one in self.obstacles.sprites():
-            if obstacle_one.rect.top == 1000:
+            if obstacle_one.rect.top >= 1000:
                 self.score += 1
                 self.obstacles.remove(obstacle_one)
-        print(len(self.obstacles))
         if not self.ship.is_alive:
-            reward = -10000 + self.ship.score
+            self.score = -10
+        return reward + self.score
 
-        return reward
 
     def is_done(self):
+        self.ship.check_collision(self.obstacles)
         if not self.ship.is_alive:
             self.ship.score = 0
-        return True
+            return True
+        else:
+            return False
 
     def observe(self):
-        radars = self.ship.radars
+        self.ship.check_radar(self.obstacles)
         ret = [0, 0, 0, 0, 0]
-        for i in radars:
-            ret.append(radars[1])
+        for i in range(0, len(self.ship.radars)):
+            ret[i] = self.ship.radars[i]
         return ret
 
     def view(self):
@@ -84,7 +87,7 @@ class Ship:
         self.rect.centerx = pos[1]
         self.pos = pos
         self.center = [self.pos[0]+50, self.pos[1]+50]
-        self.radars = []
+        self.radars = deque(maxlen=5)
         self.is_alive = True
         self.current_check = 0
         self.prev_score = 0
@@ -97,13 +100,15 @@ class Ship:
 
     def check_radar(self, obstacles):
         for obstacle_one in obstacles.sprites():
-            [x, y] = obstacle_one.rect.x, obstacle_one.rect.y
+            x, y = obstacle_one.rect.x, obstacle_one.rect.y
             dist = int(math.sqrt(math.pow(x-self.center[0], 2) + math.pow(y - self.center[1], 2)))
-            self.radars.append([(x, y), dist])
+            dist /= 100
+            dist = int(dist)
+            self.radars.append(dist)
 
     def check_collision(self, obstacles):
         self.is_alive = True
-        for obstacle in obstacles.copy():
+        for obstacle in obstacles.sprites():
             if obstacle.rect.colliderect(self):
                 self.is_alive = False
                 break
@@ -121,10 +126,8 @@ class Obstacle(Sprite):
         self.speed_factor = 1
 
     def update(self):
-        self.y += 5
+        self.y += 3
         self.rect.y = self.y
-
-
 
     def draw_obstacle(self):
         pygame.draw.rect(self.screen, self.color, self.rect)

@@ -2,31 +2,36 @@ import numpy as np
 import random
 import gym
 import gym_game
+import sys
 
 
 
 def simulate():
     global epsilon, epsilon_decay
     for episode in range(MAX_EPISODES):
-
         state = env.reset()
         total_reward = 0
         for t in range(MAX_TRY):
             if random.uniform(0, 1) < epsilon:
-                  action = env.action_space.sample()
+                action = env.action_space.sample()
             else:
-                  action = np.argmax(q_table[state])
+                action = np.argmax(q_table[state])
 
             next_state, reward, done, _ = env.step(action)
             total_reward += reward
             q_value = q_table[state][action]
             best_q = np.max(q_table[next_state])
-
             q_table[state][action] = (1 - learning_rate) * q_value + learning_rate * (reward + gamma * best_q)
 
             state = next_state
 
             env.render()
+
+            if done:
+                print(f"{episode} episode")
+                break
+        if epsilon >= 0.005:
+            epsilon *= epsilon_decay
 
 
 if __name__ == '__main__':
